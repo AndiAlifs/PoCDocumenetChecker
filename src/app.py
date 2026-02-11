@@ -4,6 +4,8 @@ import pandas as pd
 import json
 import os
 from dotenv import load_dotenv
+import extra_streamlit_components as stx
+import time
 
 # Local imports
 try:
@@ -22,7 +24,28 @@ load_dotenv()
 st.set_page_config(**PAGE_CONFIG)
 st.title("🏦 Comprehensive Trade Audit (UCP 600)")
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+cookie_manager = stx.CookieManager()
+cookie_manager.get_all()
+
+api_key = cookie_manager.get(cookie="gemini_api_key")
+
+if not api_key:
+    api_key = os.getenv("GEMINI_API_KEY")
+
+if not api_key:
+    with st.sidebar:
+        with st.form("api_key_form"):
+            st.markdown("### Enter Gemini API Key")
+            key_input = st.text_input("API Key", type="password")
+            submitted = st.form_submit_button("Save Key")
+            if submitted and key_input:
+                cookie_manager.set("gemini_api_key", key_input, key="set_key")
+                st.rerun()
+
+    st.warning("Please enter your Gemini API Key in the sidebar to proceed.")
+    st.stop()
+
+genai.configure(api_key=api_key)
 
 with st.sidebar:
     st.header("Settings")
@@ -34,7 +57,28 @@ lc = cols[0].file_uploader("Letter of Credit (MT700)", type="pdf")
 inv = cols[1].file_uploader("Invoice", type="pdf")
 bl = cols[2].file_uploader("Bill of Lading", type="pdf")
 
-if st.button("🚀 Run Comprehensive Audit"):
+
+col1, col2 = st.columns([1, 2])
+with col1:
+    run_audit = st.button("🚀 Run Comprehensive Audit")
+with col2:
+    use_ref = st.button("📂 Auto-Load Reference Files")
+
+if run_audit or use_ref:
+    if use_ref:
+        try:
+            # Determine path to reference_files (assuming app.py is in src/)
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            ref_path = os.path.join(base_dir, "reference_files")
+            
+            lc = open(os.path.join(ref_path, "lc_document.pdf"), "rb")
+            inv = open(os.path.join(ref_path, "invoice_document.pdf"), "rb")
+            bl = open(os.path.join(ref_path, "bill_of_lading_document.pdf"), "rb")
+            st.info("Using reference documents from `reference_files/`")
+        except FileNotFoundError:
+            st.error("Reference files not found. Please ensure `reference_files/` folder exists with lc_document.pdf, invoice_document.pdf, and bill_of_lading_document.pdf")
+            st.stop()
+
     if not (lc and inv and bl):
         st.warning("Please provide all 3 documents.")
     else:
@@ -47,8 +91,8 @@ if st.button("🚀 Run Comprehensive Audit"):
                 # Use the service function
                 raw_response = analyze_documents(lc_text, inv_text, bl_text, selected_model)
 
-                # print log
-                st.text_area("Raw Response Log", raw_response, height=200)
+                # print log to console
+                print("Raw Response:", raw_response)
 
                 data = json.loads(raw_response)
                 df = pd.DataFrame(data)
