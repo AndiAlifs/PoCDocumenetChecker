@@ -48,6 +48,46 @@ if not api_key:
 genai.configure(api_key=api_key)
 
 with st.sidebar:
+    st.markdown("### ℹ️ Tentang Aplikasi")
+    st.markdown("""
+    **Deskripsi & Kapabilitas:**
+    
+    Aplikasi ini menggunakan AI untuk menganalisis dokumen perdagangan (LC, Invoice, BL) dan memverifikasi kesesuaiannya dengan aturan UCP 600.
+    
+    **Fitur Utama:**
+    *   ✅ Pengecekan konsistensi dokumen otomatis.
+    *   ✅ Identifikasi discrepancy.
+    *   ✅ Referensi pasal UCP 600.
+    """)
+    
+    st.markdown("### ⚠️ Disclaimer")
+    st.warning("""
+    **Perhatian**: Hasil analisis AI ini hanya untuk tujuan referensi dan tidak menggantikan pemeriksaan profesional resmi. Selalu verifikasi dokumen asli secara manual.
+    """)
+
+    st.markdown("---")
+    with st.expander("📂 UCP Reference Files"):
+        # Determine path to reference_files (assuming app.py is in src/)
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        ref_path = os.path.join(base_dir, "reference_files")
+        
+        if os.path.exists(ref_path):
+            files = os.listdir(ref_path)
+            for f in files:
+                if f.endswith(".pdf"):
+                    file_path = os.path.join(ref_path, f)
+                    with open(file_path, "rb") as pdf_file:
+                        st.download_button(
+                            label=f"📄 {f}",
+                            data=pdf_file,
+                            file_name=f,
+                            mime="application/pdf"
+                        )
+        else:
+            st.info("Reference files directory not found.")
+
+    st.markdown("---")
+
     st.header("Settings")
     selected_model = st.selectbox("Select Model", MODELS, index=0)
 
