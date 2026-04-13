@@ -22,7 +22,7 @@ load_dotenv()
 
 # --- UI Config ---
 st.set_page_config(**PAGE_CONFIG)
-st.title("🏦 Comprehensive Trade Audit (UCP 600)")
+st.title("🏦 Comprehensive Trade Analysis (UCP 600)")
 
 cookie_manager = stx.CookieManager()
 cookie_manager.get_all()
